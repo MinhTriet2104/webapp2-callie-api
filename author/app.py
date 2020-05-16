@@ -7,6 +7,8 @@ from .model import Author
 
 class AuthorHandler(webapp2.RequestHandler):
     def get(self, author_id=None):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
         if author_id:
             author_id = int(author_id)
             author = ndb.Key(Author, author_id).get()
@@ -20,6 +22,8 @@ class AuthorHandler(webapp2.RequestHandler):
             self.response.write(authors_json)
 
     def post(self, author_id=None):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
         if author_id:
             self.abort(405)
 
@@ -32,3 +36,8 @@ class AuthorHandler(webapp2.RequestHandler):
         new_author.put()
 
         self.abort(200)
+
+    def options(self):
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        self.response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
+        self.response.headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE'

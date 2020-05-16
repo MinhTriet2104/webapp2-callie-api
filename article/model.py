@@ -15,5 +15,11 @@ class Article(ModelUtils, ndb.Model):
     category = ndb.StructuredProperty(Category, required=True)
 
     @classmethod
+    def get_by_category(cls, category_id):
+        category_id = int(category_id)
+        category = ndb.Key(Category, category_id).get()
+        return cls.query(Article.category.name == category.name).fetch(8)
+
+    @classmethod
     def get_all(cls):
         return cls.query().fetch()

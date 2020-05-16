@@ -7,6 +7,8 @@ from .model import Category
 
 class CategoryHandler(webapp2.RequestHandler):
     def get(self, category_id=None):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
         if category_id:
             category_id = int(category_id)
             category = ndb.Key(Category, category_id).get()
@@ -21,6 +23,8 @@ class CategoryHandler(webapp2.RequestHandler):
             self.response.write(categories_json)
 
     def post(self, category_id=None):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
         if category_id:
             self.abort(405)
 
@@ -33,3 +37,8 @@ class CategoryHandler(webapp2.RequestHandler):
         new_cateogry.put()
 
         self.abort(200)
+
+    def options(self):
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        self.response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
+        self.response.headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE'

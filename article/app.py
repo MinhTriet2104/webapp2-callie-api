@@ -10,29 +10,40 @@ from author.model import Author
 
 class ArticleHandler(webapp2.RequestHandler):
     def get(self, article_id=None):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
+
+        category_id = self.request.get('category')
+        if category_id:
+            articles = Article.get_by_category(category_id)
+            article_json = json.dumps([self.to_json(article)
+                                       for article in articles])
+            return self.response.write(article_json)
+
         if article_id:
             article_id = int(article_id)
             article = ndb.Key(Article, article_id).get()
 
             article_json = json.dumps(self.to_json(article))
 
-            self.response.write(article_json)
+            return self.response.write(article_json)
         else:
             articles = Article.get_all()
 
             article_json = json.dumps([self.to_json(article)
                                        for article in articles])
 
-            self.response.write(article_json)
+            return self.response.write(article_json)
 
     def post(self, article_id=None):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
         if article_id:
-            self.abort(405)
+            return self.abort(405)
         else:
             json_string = self.request.body
             article_dict = json.loads(json_string)
 
-            self.response.write(json.dumps(article_dict))
             title = article_dict['title']
             image = "https://picsum.photos/640/480"
             content = article_dict['content']
@@ -47,7 +58,49 @@ class ArticleHandler(webapp2.RequestHandler):
                 author=author
             )
             new_article.put()
-            self.abort(200)
+            return self.abort(200)
+
+    def put(self, article_id):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
+        if article_id:
+            article_id = int(article_id)
+            article = ndb.Key(Article, article_id).get()
+
+            json_string = self.request.body
+            article_dict = json.loads(json_string)
+
+            title = article_dict['title']
+            content = article_dict['content']
+            # date = article_dict['date']
+            category = ndb.Key(Category, int(article_dict['category'])).get()
+            author = ndb.Key(Author, int(article_dict['author'])).get()
+
+            article.title = title
+            article.content = content
+            # article.date = date
+            article.category = category
+            article.author = author
+
+            article.put()
+            return self.abort(200)
+        else:
+            return self.abort(405)
+
+    def delete(self, article_id):
+        self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+        self.response.headers['Content-Type'] = 'application/json'
+        if article_id:
+            article = ndb.Key(Article, int(article_id))
+            article.delete()
+            return self.abort(200)
+        else:
+            return self.abort(405)
+
+    def options(self):
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        self.response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
+        self.response.headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE'
 
     def to_json(self, o):
         if isinstance(o, list):
