@@ -9,6 +9,11 @@ from author.model import Author
 
 
 class ArticleHandler(webapp2.RequestHandler):
+    def options(self, *args, **kwargs):
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        self.response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-api-key'
+        self.response.headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE, OPTIONS'
+
     def get(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json'
@@ -37,7 +42,7 @@ class ArticleHandler(webapp2.RequestHandler):
 
     def post(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
-        self.response.headers['Content-Type'] = 'application/json'
+        self.response.headers['Content-Type'] = 'application/json, multipart/form-data'
         if article_id:
             return self.abort(405)
         else:
@@ -45,7 +50,7 @@ class ArticleHandler(webapp2.RequestHandler):
             article_dict = json.loads(json_string)
 
             title = article_dict['title']
-            image = "https://picsum.photos/640/480"
+            image = article_dict['image']
             content = article_dict['content']
             category = ndb.Key(Category, int(article_dict['category'])).get()
             author = ndb.Key(Author, int(article_dict['author'])).get()
@@ -60,7 +65,7 @@ class ArticleHandler(webapp2.RequestHandler):
             new_article.put()
             return self.abort(200)
 
-    def put(self, article_id):
+    def put(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json'
         if article_id:
@@ -87,7 +92,7 @@ class ArticleHandler(webapp2.RequestHandler):
         else:
             return self.abort(405)
 
-    def delete(self, article_id):
+    def delete(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json'
         if article_id:
@@ -96,11 +101,6 @@ class ArticleHandler(webapp2.RequestHandler):
             return self.abort(200)
         else:
             return self.abort(405)
-
-    def options(self):
-        self.response.headers['Access-Control-Allow-Origin'] = '*'
-        self.response.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept'
-        self.response.headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE'
 
     def to_json(self, o):
         if isinstance(o, list):
