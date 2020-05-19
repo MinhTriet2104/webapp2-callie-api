@@ -2,10 +2,14 @@ import webapp2
 import json
 import datetime
 from google.appengine.ext import ndb
+from google.appengine.api import images
 
 from .model import Article
 from category.model import Category
 from author.model import Author
+from image.model import Image
+
+from image.app import ImageHandler
 
 
 class ArticleHandler(webapp2.RequestHandler):
@@ -44,26 +48,29 @@ class ArticleHandler(webapp2.RequestHandler):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json, multipart/form-data'
         if article_id:
-            return self.abort(405)
+            return
         else:
-            json_string = self.request.body
-            article_dict = json.loads(json_string)
+            # json_string = self.request.body
+            # article_dict = json.loads(json_string)
+            imageFile = images.resize(self.request.get('image'), 480, 360)
+            image = Image(image=imageFile)
+            image.put()
 
-            title = article_dict['title']
-            image = article_dict['image']
-            content = article_dict['content']
-            category = ndb.Key(Category, int(article_dict['category'])).get()
-            author = ndb.Key(Author, int(article_dict['author'])).get()
+            title = self.request.get('title')
+            image_id = image.key.id()
+            content = self.request.get('content')
+            category = ndb.Key(Category, int(
+                self.request.get('category'))).get()
+            author = ndb.Key(Author, int(self.request.get('author'))).get()
 
             new_article = Article(
                 title=title,
-                image=image,
+                image_id=image_id,
                 content=content,
                 category=category,
                 author=author
             )
             new_article.put()
-            return self.abort(200)
 
     def put(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
@@ -72,14 +79,26 @@ class ArticleHandler(webapp2.RequestHandler):
             article_id = int(article_id)
             article = ndb.Key(Article, article_id).get()
 
-            json_string = self.request.body
-            article_dict = json.loads(json_string)
+            # json_string = self.request.body
+            # article_dict = json.loads(json_string)
 
-            title = article_dict['title']
-            content = article_dict['content']
-            # date = article_dict['date']
-            category = ndb.Key(Category, int(article_dict['category'])).get()
-            author = ndb.Key(Author, int(article_dict['author'])).get()
+            image_request = self.request.get('image')
+            if image_request != '':
+                imageFile = images.resize(image_request, 480, 360)
+                image = Image(image=imageFile)
+                image.put()
+
+                old_image = ndb.Key(Image, article.image_id)
+                old_image.delete()
+
+                image_id = image.key.id()
+                article.image_id = image_id
+
+            title = self.request.get('title')
+            content = self.request.get('content')
+            category = ndb.Key(Category, int(
+                self.request.get('category'))).get()
+            author = ndb.Key(Author, int(self.request.get('author'))).get()
 
             article.title = title
             article.content = content
@@ -88,19 +107,14 @@ class ArticleHandler(webapp2.RequestHandler):
             article.author = author
 
             article.put()
-            return self.abort(200)
-        else:
-            return self.abort(405)
 
     def delete(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json'
+
         if article_id:
             article = ndb.Key(Article, int(article_id))
             article.delete()
-            return self.abort(200)
-        else:
-            return self.abort(405)
 
     def to_json(self, o):
         if isinstance(o, list):
