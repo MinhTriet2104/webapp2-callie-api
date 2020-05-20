@@ -30,23 +30,32 @@ class ArticleHandler(webapp2.RequestHandler):
 
         if search:
             title = self.request.get('title')
-            # self.response.write(title)
-            results = search_function.simple_search(
-                title).results
-            articles = []
-            for result in results:
-                article = {
-                    result.fields[0].name: result.fields[0].value,
-                    result.fields[2].name: result.fields[2].value,
-                    result.fields[3].name: result.fields[3].value,
-                    result.fields[4].name: result.fields[4].value,
-                    result.fields[5].name: result.fields[5].value,
-                    result.fields[6].name: result.fields[6].value,
-                }
+            from_date = self.request.get('from')
+            to_date = self.request.get('to')
 
-                articles.append(article)
+            # return self.response.write(from_date)
+            if title != '' or from_date != '' or to_date != '':
+                results = search_function.search_with_date(
+                    title, from_date, to_date).results
+            elif title != '':
+                results = search_function.simple_search(
+                    title).results
+            else:
+                return
+            # articles = []
+            # for result in results:
+            #     article = {
+            #         result.fields[0].name: result.fields[0].value,
+            #         result.fields[2].name: result.fields[2].value,
+            #         result.fields[3].name: result.fields[3].value,
+            #         result.fields[4].name: result.fields[4].value,
+            #         result.fields[5].name: result.fields[5].value,
+            #         result.fields[6].name: result.fields[6].value,
+            #     }
 
-            return self.response.write(json.dumps(self.to_json(articles)))
+            #     articles.append(article)
+
+            # return self.response.write(json.dumps(self.to_json(articles)))
 
         if category_id:
             articles = Article.get_by_category(category_id)
@@ -72,31 +81,6 @@ class ArticleHandler(webapp2.RequestHandler):
     def post(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json, multipart/form-data'
-
-        search = self.request.get('search')
-
-        if search:
-            json_string = self.request.body
-            article_dict = json.loads(json_string)
-
-            title = article_dict['title']
-            results = search_function.simple_search(
-                title).results
-            articles = []
-            for result in results:
-                article = {
-                    result.fields[0].name: result.fields[0].value,
-                    result.fields[2].name: result.fields[2].value,
-                    result.fields[3].name: result.fields[3].value,
-                    result.fields[4].name: result.fields[4].value,
-                    result.fields[5].name: result.fields[5].value,
-                    result.fields[6].name: result.fields[6].value,
-                }
-
-                articles.append(article)
-
-            # return self.response.write(results)
-            return self.response.write(json.dumps(self.to_json(articles)))
 
         if article_id:
             return
