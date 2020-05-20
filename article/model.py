@@ -23,4 +23,8 @@ class Article(ModelUtils, ndb.Model):
 
     @classmethod
     def get_all(cls):
-        return cls.query().fetch()
+        return cls.query().order(-Article.date).fetch(8)
+
+    @classmethod
+    def _post_put_hook(cls, future):
+        return future.done()

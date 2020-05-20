@@ -11,6 +11,8 @@ from image.model import Image
 
 from image.app import ImageHandler
 
+from .search import app as search_function
+
 
 class ArticleHandler(webapp2.RequestHandler):
     def options(self, *args, **kwargs):
@@ -23,6 +25,29 @@ class ArticleHandler(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json'
 
         category_id = self.request.get('category')
+
+        search = self.request.get('search')
+
+        if search:
+            title = self.request.get('title')
+            # self.response.write(title)
+            results = search_function.simple_search(
+                title).results
+            articles = []
+            for result in results:
+                article = {
+                    result.fields[0].name: result.fields[0].value,
+                    result.fields[2].name: result.fields[2].value,
+                    result.fields[3].name: result.fields[3].value,
+                    result.fields[4].name: result.fields[4].value,
+                    result.fields[5].name: result.fields[5].value,
+                    result.fields[6].name: result.fields[6].value,
+                }
+
+                articles.append(article)
+
+            return self.response.write(json.dumps(self.to_json(articles)))
+
         if category_id:
             articles = Article.get_by_category(category_id)
             article_json = json.dumps([self.to_json(article)
@@ -47,6 +72,32 @@ class ArticleHandler(webapp2.RequestHandler):
     def post(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
         self.response.headers['Content-Type'] = 'application/json, multipart/form-data'
+
+        search = self.request.get('search')
+
+        if search:
+            json_string = self.request.body
+            article_dict = json.loads(json_string)
+
+            title = article_dict['title']
+            results = search_function.simple_search(
+                title).results
+            articles = []
+            for result in results:
+                article = {
+                    result.fields[0].name: result.fields[0].value,
+                    result.fields[2].name: result.fields[2].value,
+                    result.fields[3].name: result.fields[3].value,
+                    result.fields[4].name: result.fields[4].value,
+                    result.fields[5].name: result.fields[5].value,
+                    result.fields[6].name: result.fields[6].value,
+                }
+
+                articles.append(article)
+
+            # return self.response.write(results)
+            return self.response.write(json.dumps(self.to_json(articles)))
+
         if article_id:
             return
         else:
@@ -70,7 +121,15 @@ class ArticleHandler(webapp2.RequestHandler):
                 category=category,
                 author=author
             )
+
             new_article.put()
+            document = search_function.create_document(new_article)
+            self.response.write(
+                search_function.add_document_to_index(document))
+
+            article = Article.query(ancestor=new_article.key).get()
+            if article:
+                return self.response.write(json.dumps(self.to_json(article)))
 
     def put(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
@@ -107,6 +166,9 @@ class ArticleHandler(webapp2.RequestHandler):
             article.author = author
 
             article.put()
+            res_article = Article.query(ancestor=article.key).get()
+            if res_article:
+                return self.response.write(json.dumps(self.to_json(res_article)))
 
     def delete(self, article_id=None):
         self.response.headers.add_header('Access-Control-Allow-Origin', '*')
@@ -114,7 +176,15 @@ class ArticleHandler(webapp2.RequestHandler):
 
         if article_id:
             article = ndb.Key(Article, int(article_id))
+            article_data = ndb.Key(Article, int(article_id)).get()
+            article_key = article_data.key
+
+            ndb.Key(Image, article_data.image_id).delete()
             article.delete()
+
+            res_article = Article.query(ancestor=article_key).get()
+            if not res_article:
+                return
 
     def to_json(self, o):
         if isinstance(o, list):
