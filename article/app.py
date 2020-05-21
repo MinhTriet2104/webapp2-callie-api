@@ -13,6 +13,8 @@ from image.app import ImageHandler
 
 from .search import app as search_function
 
+per_page = 8
+
 
 class ArticleHandler(webapp2.RequestHandler):
     def options(self, *args, **kwargs):
@@ -25,8 +27,18 @@ class ArticleHandler(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json'
 
         category_id = self.request.get('category')
-
         search = self.request.get('search')
+        page = self.request.get('page')
+
+        if page != '':
+            offset = int(page) * per_page
+            query = Article.query().order(-Article.date)
+            articles = query.fetch(per_page, offset=offset + 1)
+
+            article_json = json.dumps([self.to_json(article)
+                                       for article in articles])
+
+            return self.response.write(article_json)
 
         if search:
             title = self.request.get('title')
@@ -42,20 +54,20 @@ class ArticleHandler(webapp2.RequestHandler):
                     title).results
             else:
                 return
-            # articles = []
-            # for result in results:
-            #     article = {
-            #         result.fields[0].name: result.fields[0].value,
-            #         result.fields[2].name: result.fields[2].value,
-            #         result.fields[3].name: result.fields[3].value,
-            #         result.fields[4].name: result.fields[4].value,
-            #         result.fields[5].name: result.fields[5].value,
-            #         result.fields[6].name: result.fields[6].value,
-            #     }
+            articles = []
+            for result in results:
+                article = {
+                    result.fields[0].name: result.fields[0].value,
+                    result.fields[2].name: result.fields[2].value,
+                    result.fields[3].name: result.fields[3].value,
+                    result.fields[4].name: result.fields[4].value,
+                    result.fields[5].name: result.fields[5].value,
+                    result.fields[6].name: result.fields[6].value,
+                }
 
-            #     articles.append(article)
+                articles.append(article)
 
-            # return self.response.write(json.dumps(self.to_json(articles)))
+            return self.response.write(json.dumps(self.to_json(articles)))
 
         if category_id:
             articles = Article.get_by_category(category_id)
